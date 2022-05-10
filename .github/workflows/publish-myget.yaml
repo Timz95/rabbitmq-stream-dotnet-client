@@ -1,0 +1,30 @@
+name: publish-myget
+
+on:
+  workflow_call:
+    secrets:
+      MYGET_API_KEY:
+        required: true
+
+jobs:
+  publish-myget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.nuget/packages
+            ~/.local/share/NuGet/v3-cache
+          key: ${{ runner.os }}-v2-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-v2-nuget-
+      - name: Show Env (DEBUG)
+        run: env
+      - name: Build (Release)
+        run: dotnet build --configuration=Release --verbosity=normal
+      - name: Publish to MyGet
+        run: dotnet nuget push --api-key ${{secrets.MYGET_API_KEY}} --source 'https://www.myget.org/F/rabbitmq/api/v3/index.jsonhttps://api.nuget.org/v3/index.json' ${{github.workspace}}/packages/RabbitMQ.Stream.Client.*.nupkg
